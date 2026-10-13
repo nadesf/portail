@@ -3,19 +3,37 @@
 Catalogue web des applications internes, par catégories, avec recherche et administration.
 Flask + SQLite, un seul conteneur. La base vit dans le volume `/data`.
 
-Image : **`fabiosline/portail:1.0`**
+![Aperçu du portail](docs/screenshot.png)
 
-## Lancer
+Image Docker : **`fabiosline/portail:1.0`**
+
+## Lancer avec Docker
+
+```bash
+docker run -d --name portail \
+  -p 8000:8000 \
+  -v portail-data:/data \
+  -e ADMIN_USER=admin \
+  -e ADMIN_PASSWORD='ChangezMoi!' \
+  -e PORTAL_NAME='Mon Entreprise' \
+  fabiosline/portail:1.0
+```
+
+- Portail : http://localhost:8000
+- Administration : http://localhost:8000/admin
+
+## Lancer avec Docker Compose
 
 ```bash
 cp .env.example .env     # puis éditer ADMIN_PASSWORD
 docker compose up -d
 ```
 
-- Portail : http://localhost:8000
-- Administration : http://localhost:8000/admin
+Même résultat que ci-dessus. Le `docker-compose.yml` utilise l'image `fabiosline/portail:1.0` et le volume `portail-data`.
 
-## Configuration (`.env`)
+## Configuration
+
+Variables d'environnement (`-e` avec Docker, fichier `.env` avec Compose) :
 
 | Variable | Rôle | Défaut |
 |---|---|---|
@@ -24,7 +42,7 @@ docker compose up -d
 | `PORTAL_NAME` | Nom affiché | `BDUCI` |
 | `COOKIE_SECURE` | `1` si servi en HTTPS | `0` |
 
-Changer le mot de passe : modifier `.env`, puis `docker compose up -d`.
+Changer le mot de passe : modifier la variable, puis recréer le conteneur (`docker compose up -d`). Les données sont conservées.
 
 ## Mettre à jour
 

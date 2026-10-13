@@ -1,0 +1,24 @@
+# Secrets et configuration locale
+.env
+
+# Données locales de test (base SQLite, clé de session, logs)
+local-data/
+*.db
+*.db-wal
+*.db-shm
+secret_key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Éditeur / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documents internes (non publiés)
+description.md
+DOCKERHUB.md

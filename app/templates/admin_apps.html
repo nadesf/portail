@@ -1,0 +1,123 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-bold text-brand-900">Applications <span class="text-slate-400 font-normal text-base">({{ total }})</span></h1>
+  <a href="{{ url_for('app_new') }}" class="rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2">+ Ajouter</a>
+</div>
+<form id="filters" method="get" class="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap items-center gap-3">
+  <div class="relative flex-1 min-w-[14rem]">
+    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input name="q" value="{{ q }}" placeholder="Rechercher par nom, description ou URL…" autocomplete="off"
+           class="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200">
+  </div>
+  <select name="cat" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500">
+    <option value="">Toutes les catégories</option>
+    {% for c in cats %}<option value="{{ c.id }}" {{ 'selected' if c.id == cat }}>{{ c.name }}</option>{% endfor %}
+  </select>
+  <select name="etat" class="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500">
+    <option value="">Tous les états</option>
+    <option value="active" {{ 'selected' if etat == 'active' }}>Actives</option>
+    <option value="inactive" {{ 'selected' if etat == 'inactive' }}>Inactives</option>
+    <option value="incident" {{ 'selected' if etat == 'incident' }}>Avec incident</option>
+  </select>
+  <label class="ml-auto flex items-center gap-2 text-sm text-slate-600">Afficher
+    <select name="n" class="rounded-lg border border-slate-300 px-2 py-2 text-sm outline-none focus:border-brand-500">
+      {% for k in per_page_choices %}<option value="{{ k }}" {{ 'selected' if k == per_page }}>{{ k }}</option>{% endfor %}
+    </select> éléments
+  </label>
+  <a id="reset" href="{{ url_for('admin_apps') }}" class="text-sm text-slate-500 hover:text-brand-700 {{ '' if q or cat or etat else 'hidden' }}">Réinitialiser</a>
+</form>
+<div id="results">
+<div class="bg-white border border-slate-200 rounded-xl overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr><th class="px-4 py-3">Nom</th><th class="px-4 py-3">Catégorie</th><th class="px-4 py-3">URL</th><th class="px-4 py-3">Ordre</th><th class="px-4 py-3">État</th><th class="px-4 py-3 text-right">Actions</th></tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for a in apps %}
+      <tr class="{{ '' if a.is_active else 'bg-slate-50 text-slate-400' }}">
+        <td class="px-4 py-3 font-medium">{{ a.name }}
+          {% if a.status == 'degraded' %}<span class="ml-2 px-2 py-0.5 rounded-full text-xs font-normal bg-amber-100 text-amber-800" title="{{ a.status_message }}">Défaillant</span>
+          {% elif a.status == 'unavailable' %}<span class="ml-2 px-2 py-0.5 rounded-full text-xs font-normal bg-red-100 text-red-800" title="{{ a.status_message }}">Indisponible</span>{% endif %}</td>
+        <td class="px-4 py-3">{{ a.category }}</td>
+        <td class="px-4 py-3 max-w-xs truncate"><a class="hover:underline" href="{{ a.url }}" target="_blank" rel="noopener">{{ a.url }}</a></td>
+        <td class="px-4 py-3">{{ a.display_order }}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-0.5 rounded-full text-xs {{ 'bg-emerald-100 text-emerald-700' if a.is_active else 'bg-slate-200 text-slate-600' }}">{{ 'Active' if a.is_active else 'Inactive' }}</span>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex justify-end gap-2 items-center whitespace-nowrap">
+            <form method="post" action="{{ url_for('app_toggle', app_id=a.id) }}">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+              <button class="text-slate-600 hover:text-brand-600">{{ 'Désactiver' if a.is_active else 'Activer' }}</button>
+            </form>
+            <a href="{{ url_for('app_edit', app_id=a.id, next=request.full_path.rstrip('?')) }}" class="text-brand-600 hover:underline">Modifier</a>
+            <form method="post" action="{{ url_for('app_delete', app_id=a.id) }}" onsubmit="return confirm('Supprimer « {{ a.name|replace("'", "’") }} » ?')">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+              <button class="text-red-600 hover:underline">Supprimer</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">{% if q or cat or etat %}Aucune application ne correspond à ces filtres.{% else %}Aucune application. Cliquez sur « Ajouter » pour commencer.{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if total %}
+<div class="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm text-slate-500">
+  <span>{{ first }}–{{ last }} sur {{ total }}</span>
+  {% if pages > 1 %}
+  {% macro link(n) %}{{ url_for('admin_apps', q=q or None, cat=cat or None, etat=etat or None, n=per_page if per_page != default_per_page else None, page=n) }}{% endmacro %}
+  <nav class="flex items-center gap-1" aria-label="Pagination">
+    {% if page > 1 %}<a href="{{ link(page - 1) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">← Précédent</a>{% endif %}
+    {% for n in page_nums %}
+      {% if n is none %}<span class="px-2">…</span>
+      {% elif n == page %}<span class="px-3 py-1.5 rounded-lg bg-brand-600 text-white font-medium">{{ n }}</span>
+      {% else %}<a href="{{ link(n) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">{{ n }}</a>{% endif %}
+    {% endfor %}
+    {% if page < pages %}<a href="{{ link(page + 1) }}" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Suivant →</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endif %}
+</div>
+<script>
+(function () {
+  const form = document.getElementById('filters');
+  const q = form.elements.q;
+  const reset = document.getElementById('reset');
+  let timer, ctl;
+
+  async function refresh() {
+    const params = new URLSearchParams(new FormData(form));
+    [...params.keys()].forEach(k => { if (!params.get(k)) params.delete(k); });
+    const filtering = ['q', 'cat', 'etat'].some(k => params.has(k));
+    if (params.get('n') === '{{ default_per_page }}') params.delete('n');
+    const url = location.pathname + (params.toString() ? '?' + params : '');
+    if (ctl) ctl.abort();
+    ctl = new AbortController();
+    try {
+      const r = await fetch(url, { signal: ctl.signal, headers: { 'X-Requested-With': 'fetch' } });
+      if (!r.ok) throw new Error(r.status);
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      document.getElementById('results').innerHTML = doc.getElementById('results').innerHTML;
+      history.replaceState(null, '', url);
+      reset.classList.toggle('hidden', !filtering);
+    } catch (e) {
+      if (e.name !== 'AbortError') form.submit();   // repli : rechargement classique
+    }
+  }
+  q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(refresh, 250); });
+  form.addEventListener('submit', e => { e.preventDefault(); clearTimeout(timer); refresh(); });
+  form.querySelectorAll('select').forEach(el => { el.onchange = refresh; });
+  reset.addEventListener('click', e => {
+    e.preventDefault(); q.value = ''; form.elements.cat.value = ''; form.elements.etat.value = ''; refresh();
+  });
+})();
+</script>
+{% endblock %}

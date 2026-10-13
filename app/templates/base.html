@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Applications {{ portal_name }}{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='logo.svg') }}" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      fontFamily: { sans: ['Inter Variable', 'Inter', 'Segoe UI', 'system-ui', 'sans-serif'] },
+      colors: { brand: { 50:'#eef6ff',100:'#d9eaff',200:'#bcd9ff',500:'#2f6fe4',600:'#1f5bd0',700:'#1a49a8',800:'#173d86',900:'#12295c' } }
+    } } }
+  </script>
+  <style>
+    @font-face { font-family: 'Inter Variable'; font-style: normal; font-weight: 100 900; font-display: swap;
+      src: url('{{ url_for("static", filename="fonts/inter-latin-ext-wght-normal.woff2") }}') format('woff2-variations');
+      unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+    @font-face { font-family: 'Inter Variable'; font-style: normal; font-weight: 100 900; font-display: swap;
+      src: url('{{ url_for("static", filename="fonts/inter-latin-wght-normal.woff2") }}') format('woff2-variations');
+      unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+    html { font-size: 14px; font-feature-settings: 'cv11', 'ss03'; -webkit-font-smoothing: antialiased; }
+    body { background: #f4f6fb; }
+    .card-hover { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -10px rgba(23,61,134,.35); border-color: #bcd9ff; }
+  </style>
+</head>
+<body class="font-sans text-slate-800 min-h-screen flex flex-col">
+  {% block body %}{% endblock %}
+  {% block footer %}
+  <footer class="mt-auto py-6 text-center text-xs text-slate-400">
+    {{ portal_name }} · Portail des applications internes
+  </footer>
+  {% endblock %}
+</body>
+</html>

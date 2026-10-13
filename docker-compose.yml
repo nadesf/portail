@@ -1,0 +1,17 @@
+services:
+  portail:
+    image: fabiosline/portail:1.0
+    container_name: portail
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      PORTAL_NAME: ${PORTAL_NAME:-BDUCI}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+    volumes:
+      - portail-data:/data
+
+volumes:
+  portail-data:

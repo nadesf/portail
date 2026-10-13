@@ -1,0 +1,56 @@
+{% extends "admin_base.html" %}
+{% block content %}
+{% set inp = "w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none" %}
+<h1 class="text-xl font-bold text-brand-900 mb-4">{{ title }}</h1>
+<form method="post" class="bg-white border border-slate-200 rounded-xl p-6 grid gap-5 md:grid-cols-12">
+  <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+  <div class="md:col-span-5">
+    <label class="block text-sm font-medium mb-1">Nom *</label>
+    <input name="name" required maxlength="100" value="{{ item.name or '' }}" class="{{ inp }}">
+  </div>
+  <div class="md:col-span-5">
+    <label class="block text-sm font-medium mb-1">Catégorie *</label>
+    <select name="category_id" required class="{{ inp }}">
+      <option value="">— Choisir —</option>
+      {% for c in cats %}<option value="{{ c.id }}" {{ 'selected' if c.id == item.category_id }}>{{ c.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="md:col-span-2">
+    <label class="block text-sm font-medium mb-1">Ordre d'affichage</label>
+    <input name="display_order" type="number" value="{{ item.display_order or 0 }}" class="{{ inp }}">
+  </div>
+  <div class="md:col-span-12">
+    <label class="block text-sm font-medium mb-1">URL complète *</label>
+    <input name="url" required value="{{ item.url or '' }}" placeholder="http://10.0.0.5:8080/app" class="{{ inp }}">
+    <p class="text-xs text-slate-500 mt-1">Adresse IP ou DNS, port et chemin acceptés (http:// ou https://).</p>
+  </div>
+  <div class="md:col-span-12">
+    <label class="block text-sm font-medium mb-1">Description</label>
+    <textarea name="description" rows="3" maxlength="300" class="{{ inp }}">{{ item.description or '' }}</textarea>
+  </div>
+  <div class="md:col-span-12">
+    <label class="block text-sm font-medium mb-2">Statut du service</label>
+    <div class="grid sm:grid-cols-3 gap-3">
+      {% set opts = [('ok','Opérationnel','Le service fonctionne normalement.','emerald'),('degraded','Défaillant','Un problème particulier est en cours.','amber'),('unavailable','Indisponible','Le service est injoignable.','red')] %}
+      {% for key, label, help, col in opts %}
+      <label class="cursor-pointer">
+        <input type="radio" name="status" value="{{ key }}" class="peer sr-only" {{ 'checked' if (item.status or 'ok') == key }}>
+        <span class="block rounded-lg border border-slate-300 p-3 h-full hover:bg-slate-50
+              {{ {'ok':'peer-checked:border-emerald-500 peer-checked:bg-emerald-50','degraded':'peer-checked:border-amber-500 peer-checked:bg-amber-50','unavailable':'peer-checked:border-red-500 peer-checked:bg-red-50'}[key] }}">
+          <span class="flex items-center gap-2 text-sm font-medium"><span class="h-2.5 w-2.5 rounded-full bg-{{ col }}-500"></span>{{ label }}</span>
+          <span class="block text-xs text-slate-500 mt-1">{{ help }}</span>
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+    <input name="status_message" maxlength="200" value="{{ item.status_message or '' }}"
+           placeholder="Message affiché aux utilisateurs (ex. : Lenteurs sur les virements, retour prévu à 16h)" class="{{ inp }} mt-3">
+    <p class="text-xs text-slate-500 mt-1">Facultatif. Ignoré lorsque le service est opérationnel.</p>
+  </div>
+  <label class="md:col-span-12 flex items-center gap-2 text-sm"><input type="checkbox" name="is_active" {{ 'checked' if item.is_active }} class="h-4 w-4 rounded"> Application active (visible sur le portail)</label>
+  <div class="md:col-span-12 flex gap-3 pt-2 border-t border-slate-100">
+    <button class="rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-5 py-2 mt-4">Enregistrer</button>
+    <a href="{{ request.args.get('next') if request.args.get('next', '').startswith('/admin') else url_for('admin_apps') }}" class="rounded-lg border border-slate-300 text-sm px-5 py-2 hover:bg-slate-50 mt-4">Annuler</a>
+  </div>
+</form>
+{% endblock %}

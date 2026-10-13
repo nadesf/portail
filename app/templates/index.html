@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+  .serif { font-family: inherit; letter-spacing: -0.015em; font-style: normal; }
+
+  .cat { display: flex; align-items: center; gap: .7rem; width: 100%; padding: .55rem .75rem; border-radius: .5rem; border-left: 3px solid transparent; color: #475569; font-weight: 500; text-align: left; white-space: nowrap; }
+  .cat:hover { background: #e8edf5; color: #12295c; }
+  .cat.on { background: #eef6ff; color: #12295c; border-left-color: #1f5bd0; }
+  .cat .n { margin-left: auto; font-size: .72rem; color: #94a3b8; }
+
+  .grid-apps { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
+  .sq { position: relative; aspect-ratio: 1 / 1; display: flex; flex-direction: column; padding: .75rem; background: #fff; border: 1.5px solid #cbd5e1; border-radius: .6rem; transition: border-color .15s, box-shadow .15s, transform .15s; }
+  .sq:hover { border-color: #1f5bd0; box-shadow: 0 8px 20px -10px rgba(23,61,134,.55); transform: translateY(-2px); }
+  .sq .ico { height: 2.1rem; width: 2.1rem; border: 1.5px solid #cbd5e1; border-radius: .5rem; display: flex; align-items: center; justify-content: center; color: #475569; }
+  .sq:hover .ico { border-color: #1f5bd0; color: #1f5bd0; }
+  .sq.st-degraded { border-color: #f59e0b; }
+  .sq.st-unavailable { border-color: #ef4444; background: #fafafa; }
+  .sq.st-unavailable .ico, .sq.st-unavailable h3 { opacity: .55; }
+  .sq.st-unavailable { cursor: not-allowed; }
+  .sq:hover.st-degraded { border-color: #d97706; }
+  .sq:hover.st-unavailable { border-color: #ef4444; transform: none; box-shadow: none; }
+  .sq .pill { position: absolute; top: .6rem; right: .6rem; display: flex; align-items: center; gap: .3rem; font-size: .6rem; font-weight: 600; padding: .1rem .45rem; border-radius: 999px; }
+  .sq .pill::before { content: ''; height: .4rem; width: .4rem; border-radius: 999px; background: currentColor; }
+  .pill.degraded { background: #fef3c7; color: #92400e; }
+  .pill.unavailable { background: #fee2e2; color: #991b1b; }
+  .sq .msg { margin-top: .2rem; font-size: .68rem; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .st-degraded .msg { color: #92400e; } .st-unavailable .msg { color: #991b1b; }
+  .sq.st-unavailable .open { color: #991b1b; }
+  .sq .ref { position: absolute; top: .7rem; right: .75rem; font-size: .6rem; letter-spacing: .08em; color: #a1a1aa; }
+  .sq h3 { margin-top: .6rem; font-size: .85rem; font-weight: 600; color: #0f172a; line-height: 1.25; }
+  .sq p { margin-top: .2rem; font-size: .68rem; color: #64748b; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sq .open { margin-top: auto; display: flex; align-items: center; justify-content: space-between; padding-top: .4rem; border-top: 1px solid #e2e8f0; font-size: .7rem; font-weight: 500; color: #1f5bd0; }
+</style>
+
+<header class="bg-gradient-to-r from-slate-900 via-teal-900 to-teal-700 text-white shadow-sm">
+  <div class="max-w-7xl mx-auto px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+    <div class="flex items-center gap-3">
+      <img src="{{ url_for('static', filename='logo.svg') }}" alt="Logo {{ portal_name }}" class="h-9 w-9 rounded-lg ring-2 ring-white/30">
+      <div class="leading-tight">
+        <div class="serif text-lg font-bold">{{ portal_name }}</div>
+        <div class="text-xs text-white/70">Portail des applications internes</div>
+      </div>
+    </div>
+    <div class="relative flex-1 min-w-[16rem] max-w-xl ml-auto">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" autofocus autocomplete="off" placeholder="Rechercher une application…  ( / )"
+             class="w-full rounded-lg bg-white text-slate-800 py-2 pl-10 pr-3 text-sm outline-none focus:ring-4 focus:ring-white/30">
+    </div>
+    <a href="{{ url_for('admin_apps') }}" class="text-sm text-white/70 hover:text-white">Administration</a>
+  </div>
+</header>
+
+<div class="max-w-7xl mx-auto px-5 py-7 w-full lg:grid lg:grid-cols-[15rem_1fr] lg:gap-8 lg:items-start">
+  <aside class="lg:sticky lg:top-5">
+    <p class="hidden lg:block serif text-xs font-semibold uppercase tracking-wider text-slate-400 px-3 mb-2">Catégories</p>
+    <nav id="chips" class="flex lg:flex-col gap-1 overflow-x-auto text-sm">
+      <button data-cat="all" class="cat on">{{ icon('', 'h-4 w-4 shrink-0') }}<span>Tout le catalogue</span><span class="n">{{ total }}</span></button>
+      {% for g in groups %}
+      <button data-cat="{{ g.cat.id }}" class="cat">{{ icon(g.cat.name, 'h-4 w-4 shrink-0', g.cat.icon) }}<span>{{ g.cat.name }}</span><span class="n">{{ g.apps|length }}</span></button>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  <main class="min-w-0 mt-6 lg:mt-0 space-y-9">
+    {% for g in groups %}
+    <section class="group-section" data-cat="{{ g.cat.id }}">
+      <div class="flex items-end gap-3 mb-3">
+        <h2 class="serif text-xl font-bold text-brand-900 leading-tight">{{ g.cat.name }}</h2>
+        {% if g.cat.description %}<span class="text-xs text-slate-500 mb-0.5 hidden sm:inline">{{ g.cat.description }}</span>{% endif %}
+        <div class="flex-1 border-b border-slate-300 mb-1.5"></div>
+      </div>
+      <div class="grid-apps">
+        {% for a in g.apps %}
+        <a href="{{ a.url if a.status != 'unavailable' else '#' }}" {% if a.status != 'unavailable' %}target="_blank" rel="noopener"{% else %}aria-disabled="true" onclick="return false"{% endif %}
+           class="app-card sq{{ ' st-' ~ a.status if a.status != 'ok' }}" {% if a.status_message %}title="{{ a.status_message }}"{% endif %}
+           data-search="{{ (a.name ~ ' ' ~ (a.description or '') ~ ' ' ~ g.cat.name ~ (' défaillant problème' if a.status == 'degraded') ~ (' indisponible' if a.status == 'unavailable'))|lower }}">
+          {% if a.status == 'ok' %}<span class="ref">N° {{ '%03d'|format(a.id) }}</span>
+          {% else %}<span class="pill {{ a.status }}">{{ 'Défaillant' if a.status == 'degraded' else 'Indisponible' }}</span>{% endif %}
+          <div class="ico">{{ icon(g.cat.name, "h-4 w-4", g.cat.icon) }}</div>
+          <h3>{{ a.name }}</h3>
+          {% if a.status != 'ok' %}<p class="msg">{{ a.status_message or ('Service défaillant' if a.status == 'degraded' else 'Service indisponible') }}</p>
+          {% else %}<p>{{ a.description or 'Aucune description.' }}</p>{% endif %}
+          <div class="open">{{ 'Indisponible' if a.status == 'unavailable' else 'Ouvrir' }} <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></div>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+
+    <p id="empty" class="{{ 'hidden ' if groups }}text-center text-slate-500 py-16">
+      {% if not groups %}Aucune application n'est disponible pour le moment.{% else %}Aucune application ne correspond à votre recherche.{% endif %}
+    </p>
+  </main>
+</div>
+
+<script>
+  const input = document.getElementById('search');
+  const cats = [...document.querySelectorAll('.cat')];
+  const sections = [...document.querySelectorAll('.group-section')];
+  const empty = document.getElementById('empty');
+  let cat = 'all';
+
+  function apply() {
+    const q = input.value.trim().toLowerCase();
+    let shown = 0;
+    sections.forEach(s => {
+      let n = 0;
+      s.querySelectorAll('.app-card').forEach(c => {
+        const ok = (!q || c.dataset.search.includes(q)) && (cat === 'all' || s.dataset.cat === cat);
+        c.classList.toggle('hidden', !ok);
+        if (ok) n++;
+      });
+      s.classList.toggle('hidden', n === 0);
+      shown += n;
+    });
+    empty.classList.toggle('hidden', shown > 0);
+    cats.forEach(c => c.classList.toggle('on', c.dataset.cat === cat));
+  }
+  input.addEventListener('input', apply);
+  cats.forEach(c => c.addEventListener('click', () => { cat = c.dataset.cat; apply(); }));
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== input) { e.preventDefault(); input.focus(); }
+  });
+  apply();
+</script>
+{% endblock %}

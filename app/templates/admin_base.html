@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Administration · {{ portal_name }}{% endblock %}
+{% block body %}
+<header class="bg-brand-900 text-white">
+  <div class="max-w-7xl mx-auto px-5 h-14 flex items-center justify-between">
+    <a href="{{ url_for('index') }}" class="flex items-center gap-2.5">
+      <img src="{{ url_for('static', filename='logo.svg') }}" class="h-8 w-8 rounded-lg" alt="">
+      <span class="font-semibold">Administration</span>
+    </a>
+    <div class="flex items-center gap-4 text-sm">
+      <a href="{{ url_for('index') }}" class="text-white/70 hover:text-white">Voir le portail</a>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <button class="rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5">Déconnexion</button>
+      </form>
+    </div>
+  </div>
+</header>
+<div class="bg-white border-b border-slate-200">
+  <nav class="max-w-7xl mx-auto px-5 flex gap-1 text-sm font-medium">
+    {% for key, label, endpoint in [('apps','Applications','admin_apps'),('cats','Catégories','admin_categories'),('logs','Journal','admin_logs')] %}
+    <a href="{{ url_for(endpoint) }}" class="px-4 py-3 border-b-2 {{ 'border-brand-600 text-brand-700' if active == key else 'border-transparent text-slate-500 hover:text-slate-800' }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+</div>
+<main class="max-w-7xl mx-auto px-5 py-6 w-full">
+  {% include "_flash.html" %}
+  <div class="mt-4">{% block content %}{% endblock %}</div>
+</main>
+{% endblock %}

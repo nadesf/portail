@@ -1,0 +1,16 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h1 class="text-xl font-bold text-brand-900 mb-4">Journal des opérations <span class="text-slate-400 font-normal text-base">(200 dernières)</span></h1>
+<div class="bg-white border border-slate-200 rounded-xl overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500"><tr><th class="px-4 py-3">Date</th><th class="px-4 py-3">Utilisateur</th><th class="px-4 py-3">IP</th><th class="px-4 py-3">Action</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for l in logs %}
+      <tr><td class="px-4 py-2.5 whitespace-nowrap text-slate-500">{{ l.ts }}</td><td class="px-4 py-2.5">{{ l.actor }}</td><td class="px-4 py-2.5">{{ l.ip }}</td><td class="px-4 py-2.5">{{ l.action }}</td></tr>
+      {% else %}
+      <tr><td colspan="4" class="px-4 py-10 text-center text-slate-500">Aucune opération enregistrée.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{# Sélecteur d'icône avec recherche. Variable `current` = nom choisi ('' = automatique) #}
+<div id="icon-picker" data-src="{{ url_for('static', filename='icons.json') }}">
+  <label class="block text-sm font-medium mb-1">Icône</label>
+  <input type="hidden" name="icon" id="icon-value" value="{{ current or '' }}">
+  <div class="flex flex-wrap items-center gap-2 mb-2">
+    <button type="button" id="icon-auto" class="h-9 px-3 rounded-lg border border-slate-300 text-xs font-medium hover:bg-slate-50" title="Choisie d'après le nom de la catégorie">Auto</button>
+    <div class="flex items-center gap-2 text-sm text-slate-600">
+      Sélection : <span id="icon-preview" class="h-9 w-9 flex items-center justify-center rounded-lg border border-brand-600 bg-brand-50 text-brand-700"></span>
+      <span id="icon-name" class="text-xs text-slate-500"></span>
+    </div>
+    <input id="icon-search" type="search" autocomplete="off" placeholder="Rechercher (banque, argent, sécurité, courrier…)"
+           class="ml-auto w-full sm:w-72 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200">
+  </div>
+  <div id="icon-grid" class="flex flex-wrap gap-1.5 max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2"></div>
+  <p id="icon-hint" class="text-xs text-slate-500 mt-1">« Auto » choisit l'icône d'après le nom de la catégorie.</p>
+</div>
+<script>
+(function () {
+  const root = document.getElementById('icon-picker');
+  const value = document.getElementById('icon-value');
+  const grid = document.getElementById('icon-grid');
+  const preview = document.getElementById('icon-preview');
+  const nameEl = document.getElementById('icon-name');
+  const search = document.getElementById('icon-search');
+  const hint = document.getElementById('icon-hint');
+  let lib = {};
+  const MAX = 120;
+  const SUGGESTED = ['landmark','banknote','wallet','credit-card','coins','calculator','users','user-round','shield-check','scale','triangle-alert','chart-column','trending-up','chart-pie','box','wrench','server','database','settings','file-text','folder','mail','phone','globe','map-pin','building-2','briefcase','lock','key-round','clipboard-list','calendar','graduation-cap','headset','laptop','monitor','network','hard-drive','cloud','search','layout-grid'];
+  // équivalents français -> mots anglais utilisés par Lucide
+  const FR = {banque:'landmark bank',argent:'banknote coins money wallet',finance:'banknote coins chart',compta:'calculator',comptabilité:'calculator',carte:'credit-card card',monétique:'credit-card',personne:'user users',personnel:'users',employé:'user users',rh:'users user',ressource:'users',sécurité:'lock shield key',securite:'lock shield',conformité:'shield-check scale',juridique:'scale gavel',loi:'scale gavel',risque:'triangle-alert',alerte:'triangle-alert bell',rapport:'file-text chart',reporting:'chart-column',statistique:'chart-column chart-pie',graphique:'chart',document:'file-text folder',courrier:'mail',mail:'mail',messagerie:'mail message',téléphone:'phone',appel:'phone headset',web:'globe',internet:'globe',réseau:'network wifi',serveur:'server',base:'database',données:'database',sauvegarde:'hard-drive cloud',cloud:'cloud',outil:'wrench hammer',outils:'wrench settings',paramètre:'settings',réglage:'settings',agence:'building-2 map-pin',lieu:'map-pin',bâtiment:'building',direction:'briefcase',travail:'briefcase',calendrier:'calendar',congé:'calendar plane',formation:'graduation-cap book',livre:'book',support:'headset life-buoy',aide:'life-buoy circle-help',ordinateur:'laptop monitor',écran:'monitor',recherche:'search',supervision:'activity monitor',surveillance:'eye activity',client:'user handshake',crédit:'credit-card hand-coins',virement:'arrow-left-right send',paiement:'credit-card banknote',facture:'receipt',coffre:'vault lock',audit:'clipboard-check search',contrôle:'clipboard-check',qualité:'badge-check',projet:'folder kanban',tâche:'list-checks',idée:'lightbulb',cadenas:'lock',clé:'key',maison:'house',accueil:'house'};
+  const norm = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const FRN = {}; Object.keys(FR).forEach(k => FRN[norm(k)] = FR[k]);
+
+  function svg(name, cls) {
+    const e = lib[name]; if (!e) return '';
+    return '<svg class="' + cls + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">' + e[0] + '</svg>';
+  }
+  function refreshSelection() {
+    const v = value.value;
+    preview.innerHTML = v && lib[v] ? svg(v, 'h-5 w-5') : '<span class="text-xs">Auto</span>';
+    nameEl.textContent = v || 'automatique';
+    grid.querySelectorAll('button').forEach(b => {
+      const on = b.dataset.k === v;
+      b.className = 'h-10 w-10 flex items-center justify-center rounded-lg border ' +
+        (on ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-100');
+    });
+  }
+  function results(q) {
+    q = norm(q.trim());
+    if (!q) return SUGGESTED.filter(k => lib[k]);
+    const words = q.split(/\s+/).flatMap(w => {
+      const fr = w.length >= 2 ? Object.keys(FRN).filter(k => k.startsWith(w)) : [];
+      return [w].concat(fr.flatMap(k => FRN[k].split(' ')));
+    });
+    const scored = [];
+    for (const k in lib) {
+      const hay = k + ' ' + lib[k][1];
+      let sc = 0;
+      for (const w of words) { if (k === w) sc += 5; else if (k.includes(w)) sc += 3; else if (hay.includes(w)) sc += 1; }
+      if (sc) scored.push([sc, k]);
+    }
+    scored.sort((a, b) => b[0] - a[0] || a[1].localeCompare(b[1]));
+    return scored.map(x => x[1]);
+  }
+  function render() {
+    const all = results(search.value);
+    const list = all.slice(0, MAX);
+    if (value.value && lib[value.value] && !list.includes(value.value)) list.unshift(value.value);
+    grid.innerHTML = list.map(k => '<button type="button" data-k="' + k + '" title="' + k + '">' + svg(k, 'h-5 w-5') + '</button>').join('') ||
+      '<span class="text-sm text-slate-500 p-2">Aucune icône trouvée.</span>';
+    hint.textContent = search.value.trim()
+      ? all.length + ' résultat(s)' + (all.length > MAX ? ' (affinez la recherche pour voir les autres)' : '')
+      : 'Suggestions — tapez pour chercher parmi ' + Object.keys(lib).length + ' icônes. « Auto » choisit l\'icône d\'après le nom.';
+    refreshSelection();
+  }
+  grid.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    value.value = b.dataset.k; refreshSelection();
+  });
+  document.getElementById('icon-auto').addEventListener('click', () => { value.value = ''; refreshSelection(); });
+  search.addEventListener('input', render);
+  search.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+  fetch(root.dataset.src).then(r => r.json()).then(j => { lib = j; render(); })
+    .catch(() => { hint.textContent = "Impossible de charger la liste d'icônes."; });
+})();
+</script>
